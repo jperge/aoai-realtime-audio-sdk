@@ -277,3 +277,7 @@ formEndpointField.addEventListener('change', async () => {
   guessIfIsAzureOpenAI();
 });
 guessIfIsAzureOpenAI();
+
+document.addEventListener("DOMContentLoaded", () => {
+  formApiKeyField.value = import.meta.env.VITE_AZURE_OPENAI_API_KEY || "";
+});

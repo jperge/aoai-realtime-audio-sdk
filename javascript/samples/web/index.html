@@ -21,7 +21,7 @@
         <div class="controls">
           <div class="input-group">
             <label for="endpoint">Endpoint</label>
-            <input id="endpoint" type="text" placeholder="Enter resource/endpoint URL" />
+            <input id="endpoint" type="text" placeholder="Enter resource/endpoint URL" value="https://jperg-m4ksuy86-eastus2.cognitiveservices.azure.com/openai/realtime?api-version=2024-10-01-preview&deployment=gpt-4o-mini-realtime-preview"/>
             <div class="toggle-group">
               <label for="azure-toggle">Azure OpenAI</label>
               <input id="azure-toggle" type="checkbox" checked />
@@ -29,7 +29,7 @@
               <label for="api-key">API Key</label>
             <input id="api-key" type="password" placeholder="Enter API key" />
             <label for="deployment-or-model">Deployment</label>
-            <input id="deployment-or-model" type="text" placeholder="Enter deployment/model, e.g. gpt-4o-realtime-preview-2024-10-01" />
+            <input id="deployment-or-model" type="text" placeholder="Enter deployment/model, e.g. gpt-4o-realtime-preview-2024-10-01" value="gpt-4o-mini-realtime-preview"/>
           </div>
           <div class="input-group">
           <div class="button-group">
@@ -44,18 +44,31 @@
             <label for="temperature">Temperature</label>
             <input id="temperature" type="number" min="0.6" max="1.2" step="0.05" placeholder="0.6-1.2 (default 0.8)"/>
           </div>
+          <!-- New containers for voice activity detection parameters:-->
+          <div class="input-group">
+            <label for="vad-threshold">VAD Threshold</label>
+            <input id="vad-threshold" type="number" step="any" value="0.5" placeholder="0.5"/>
+          </div>           
+          <div class="input-group">
+            <label for="prefix-padding-ms">Prefix Padding (ms)</label>
+            <input id="prefix-padding-ms" type="number" step="1" value="200" placeholder="200"/>
+          </div>  
+          <div class="input-group">
+            <label for="silence-duration-ms">Silence Duration (ms)</label>
+            <input id="silence-duration-ms" type="number" step="1" value="500" placeholder="500"/>
+          </div>  
           <div class="input-group">
             <label for="voice">Voice</label>
               <select id="voice">
-                <option></option>
-                <option>alloy</option>
-                <option>ash</option>
-                <option>ballad</option>
-                <option>coral</option>
-                <option>echo</option>
-                <option>sage</option>
-                <option>shimmer</option>
-                <option>verse</option>
+                <option value=""></option>
+                <option value="alloy">alloy</option>
+                <option value="ash">ash</option>
+                <option value="ballad">ballad</option>
+                <option value="coral">coral</option>
+                <option value="echo" selected>echo</option>
+                <option value="sage">sage</option>
+                <option value="shimmer">shimmer</option>
+                <option value="verse">verse</option>
               </select>
           </div>
           <div class="button-group">
