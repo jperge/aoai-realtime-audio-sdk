@@ -32,11 +32,20 @@ async function start_realtime(endpoint: string, apiKey: string, deploymentOrMode
 
 function createConfigMessage() : SessionUpdateMessage {
 
+  // Read UI fielods for VAD configuration:
+  const vadThreshold = parseFloat(formVadThresholdField.value);
+  const prefixPadding = parseInt(formPrefixPaddingField.value);
+  const silenceDuration = parseInt(formSilenceDurationField.value);
+
+
   let configMessage : SessionUpdateMessage = {
     type: "session.update",
     session: {
       turn_detection: {
         type: "server_vad",
+        threshold: !isNaN(vadThreshold) ? vadThreshold : undefined,
+        prefix_padding_ms: !isNaN(prefixPadding) ? prefixPadding : undefined,
+        silence_duration_ms: !isNaN(silenceDuration) ? silenceDuration : undefined,
       },
       input_audio_transcription: {
         model: "whisper-1"
@@ -178,6 +187,9 @@ const formSessionInstructionsField =
   document.querySelector<HTMLTextAreaElement>("#session-instructions")!;
 const formTemperatureField = document.querySelector<HTMLInputElement>("#temperature")!;
 const formVoiceSelection = document.querySelector<HTMLInputElement>("#voice")!;
+const formVadThresholdField = document.querySelector<HTMLInputElement>("#vad-threshold")!;
+const formPrefixPaddingField = document.querySelector<HTMLInputElement>("#prefix-padding-ms")!;
+const formSilenceDurationField = document.querySelector<HTMLInputElement>("#silence-duration-ms")!;
 
 let latestInputSpeechBlock: Element;
 
