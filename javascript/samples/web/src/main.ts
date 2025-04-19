@@ -10,6 +10,24 @@ let realtimeStreaming: LowLevelRTClient;
 let audioRecorder: Recorder;
 let audioPlayer: Player;
 
+// New global conversation log (each elements is one dialogue line)
+let conversationLog: string[] = [];
+let currentCustomerDelta: string = "";
+
+// Helper function to update conversation and the UI
+function updateConversation(message: string) {
+  // If the message starts with a sender label, add a new dialogue line
+  if (message.startsWith("User:") || message.startsWith("Assistant:")) {
+    conversationLog.push(message);
+  } else if (conversationLog.length > 0) {
+    // If the message doesn't start with a sender label, append it to the last dialogue line
+    conversationLog[conversationLog.length - 1] += message;
+  } else {
+    // If there are no dialogue lines, create a new one
+    conversationLog.push(message);
+  }
+}
+
 async function start_realtime(endpoint: string, apiKey: string, deploymentOrModel: string) {
   if (isAzureOpenAI()) {
     realtimeStreaming = new LowLevelRTClient(new URL(endpoint), { key: apiKey }, { deployment: deploymentOrModel });
@@ -57,9 +75,16 @@ function createConfigMessage() : SessionUpdateMessage {
   const temperature = getTemperature();
   const voice = getVoice();
 
-  if (systemMessage) {
-    configMessage.session.instructions = systemMessage;
+  // if (systemMessage) {
+  //   configMessage.session.instructions = systemMessage;
+  // }
+  const conversationHistory = conversationLog.join("\n");
+  // Append conversation log to the system promopt if available
+  const fullSystemMessage = systemMessage ? `${systemMessage}\n\n${conversationHistory}` : conversationHistory;
+  if (fullSystemMessage) {
+    configMessage.session.instructions = fullSystemMessage;
   }
+
   if (!isNaN(temperature)) {
     configMessage.session.temperature = temperature;
   }
@@ -68,6 +93,15 @@ function createConfigMessage() : SessionUpdateMessage {
   }
 
   return configMessage;
+}
+
+function appendToAITextBlock(aiText: string) {
+  let aiTextElements = formReceivedTextContainer.children;
+  if (!aiTextElements[aiTextElements.length -1].textContent) {
+    aiTextElements[aiTextElements.length -1].textContent += "Assistant: " + aiText;
+  } else {
+    aiTextElements[aiTextElements.length -1].textContent += aiText;
+  }
 }
 
 async function handleRealtimeMessages() {
@@ -80,18 +114,8 @@ async function handleRealtimeMessages() {
         makeNewTextBlock("<< Session Started >>");
         makeNewTextBlock();
         break;
-      case "response.audio_transcript.delta":
-        appendToTextBlock(message.delta);
-        break;
-      case "response.audio.delta":
-        const binary = atob(message.delta);
-        const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
-        const pcmData = new Int16Array(bytes.buffer);
-        audioPlayer.play(pcmData);
-        break;
-
       case "input_audio_buffer.speech_started":
-        makeNewTextBlock("<< Speech Started >>");
+        makeNewTextBlock();
         let textElements = formReceivedTextContainer.children;
         latestInputSpeechBlock = textElements[textElements.length - 1];
         makeNewTextBlock();
@@ -99,8 +123,23 @@ async function handleRealtimeMessages() {
         break;
       case "conversation.item.input_audio_transcription.completed":
         latestInputSpeechBlock.textContent += " User: " + message.transcript;
+        updateConversation("User: " + message.transcript);
+        break;
+      case "response.audio_transcript.delta":
+        appendToAITextBlock(message.delta);
+        currentCustomerDelta += message.delta;
+        break;
+      case "response.audio.delta":
+        const binary = atob(message.delta);
+        const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+        const pcmData = new Int16Array(bytes.buffer);
+        audioPlayer.play(pcmData);
         break;
       case "response.done":
+        if (currentCustomerDelta) {
+          updateConversation("Assistant: " + currentCustomerDelta);
+          currentCustomerDelta = "";
+        }
         formReceivedTextContainer.appendChild(document.createElement("hr"));
         break;
       default:
@@ -236,13 +275,13 @@ function makeNewTextBlock(text: string = "") {
   formReceivedTextContainer.appendChild(newElement);
 }
 
-function appendToTextBlock(text: string) {
-  let textElements = formReceivedTextContainer.children;
-  if (textElements.length == 0) {
-    makeNewTextBlock();
-  }
-  textElements[textElements.length - 1].textContent += text;
-}
+// function appendToTextBlock(text: string) {
+//   let textElements = formReceivedTextContainer.children;
+//   if (textElements.length == 0) {
+//     makeNewTextBlock();
+//   }
+//   textElements[textElements.length - 1].textContent += text;
+// }
 
 formStartButton.addEventListener("click", async () => {
   setFormInputState(InputState.Working);
@@ -279,10 +318,13 @@ formStopButton.addEventListener("click", async () => {
   resetAudio(false);
   realtimeStreaming.close();
   setFormInputState(InputState.ReadyToStart);
+  // After stopping, update the UI with the full conversation log, as a debugging aid:
+  //formReceivedTextContainer.textContent = conversationLog.join("\n");
 });
 
 formClearAllButton.addEventListener("click", async () => {
   formReceivedTextContainer.innerHTML = "";
+  conversationLog = [];
 });
 
 formEndpointField.addEventListener('change', async () => {
